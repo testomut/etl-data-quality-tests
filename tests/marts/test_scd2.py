@@ -72,5 +72,5 @@ def test_unchanged_customers_keep_a_single_version(wh: WarehouseConnector, sourc
     unchanged = [cid for cid, versions in source.get_customer_versions().items() if len(versions) == 1]
 
     with custom.wrapped_test_step("1. dim_customer has one row for each of them"):
-        wh.verify_row_count("marts.dim_customer", len(unchanged),
-                            "customer_id IN (SELECT UNNEST(?))", [unchanged])
+        marks = ", ".join("?" * len(unchanged))
+        wh.verify_row_count("marts.dim_customer", len(unchanged), f"customer_id IN ({marks})", unchanged)

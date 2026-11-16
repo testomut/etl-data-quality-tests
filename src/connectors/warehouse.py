@@ -173,7 +173,7 @@ class WarehouseConnector:
                     FROM staging.payments GROUP BY order_id)
             SELECT p.order_id, p.amount, p.currency, pay.n, pay.amount, pay.currency
             FROM paid p LEFT JOIN pay ON pay.order_id = p.order_id
-            WHERE pay.n IS DISTINCT FROM 1 OR pay.amount <> p.amount OR pay.currency <> p.currency
+            WHERE pay.n IS NULL OR pay.n <> 1 OR pay.amount <> p.amount OR pay.currency <> p.currency
             ORDER BY 1
             """)
 

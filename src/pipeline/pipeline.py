@@ -13,8 +13,9 @@ than it. That is what makes a re-run of the same batch a no-op (idempotency) and
 `faults` switches on known defects. They exist only so the test suite can prove that each check fails when the
 defect it guards against is present (tests/faults). Production code would not carry them.
 
-SQL is kept to CTEs, window functions and standard joins so it ports to Redshift / Snowflake / BigQuery with
-small changes. DuckDB-only functions are limited to TRY_CAST and read helpers and are marked where used.
+SQL is kept to CTEs, window functions, EXISTS and standard joins so it runs on Redshift / Snowflake with small
+changes. The one DuckDB/Snowflake-only function is TRY_CAST, marked where used; on Redshift it becomes a regex
+check on the text value. The DDL types (VARCHAR, DECIMAL, TIMESTAMP, BOOLEAN) are common to all three.
 """
 
 from __future__ import annotations
@@ -262,8 +263,10 @@ class Pipeline:
 
     def _stage_fx(self, batch_id: str) -> None:
         self.con.execute(
-            """DELETE FROM staging.fx_rates WHERE (rate_date, currency) IN (
-                   SELECT CAST(rate_date AS DATE), currency FROM raw.fx_rates WHERE _batch_id = ?)""",
+            """DELETE FROM staging.fx_rates WHERE EXISTS (
+                   SELECT 1 FROM raw.fx_rates r WHERE r._batch_id = ?
+                     AND CAST(r.rate_date AS DATE) = staging.fx_rates.rate_date
+                     AND r.currency = staging.fx_rates.currency)""",
             [batch_id])
         self.con.execute(
             """INSERT INTO staging.fx_rates
@@ -296,9 +299,10 @@ class Pipeline:
                                     f"SELECT * FROM ({candidates}) WHERE reason IS NOT NULL", [batch_id, wm])
         valid_filter = "" if "no_rejects" in self.faults else "WHERE reason IS NULL"
         dedup = "" if "skip_dedup" in self.faults else "WHERE rn = 1"
+        self.con.execute("DROP TABLE IF EXISTS incoming_orders")
         self.con.execute(
             f"""
-            CREATE OR REPLACE TEMP TABLE incoming_orders AS
+            CREATE TEMP TABLE incoming_orders AS
             WITH c AS ({candidates}),
             ranked AS (SELECT *, ROW_NUMBER() OVER (PARTITION BY order_id ORDER BY updated_at DESC) AS rn
                        FROM c {valid_filter})

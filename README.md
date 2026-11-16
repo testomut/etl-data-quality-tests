@@ -6,7 +6,9 @@ integrity, SCD2 history, incremental loads, late-arriving data, schema drift, fr
 quality gate.
 
 > Learning project, November 2026. The data is synthetic and generated deterministically. DuckDB stands in for a
-> cloud warehouse (Redshift, Snowflake, BigQuery); the SQL sticks to CTEs, window functions and standard joins.
+> cloud warehouse: the SQL sticks to CTEs, window functions, EXISTS and standard joins, so it runs on Redshift or
+> Snowflake with small changes. The only engine-specific function is `TRY_CAST` (DuckDB / Snowflake), marked in
+> `src/pipeline/pipeline.py`; on Redshift it becomes a regex check.
 
 ## Architecture
 
