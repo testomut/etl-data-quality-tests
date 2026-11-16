@@ -1,0 +1,36 @@
+name: data-quality
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - run: pip install -e ".[dev]"
+      - run: ruff check .
+      - run: mypy src fixtures
+      - run: pytest -n auto
+
+  quality-gate:
+    # Builds the sample warehouse and publishes the GO / NO-GO report as a build artifact.
+    runs-on: ubuntu-latest
+    needs: tests
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - run: pip install -e .
+      - run: python -m src.pipeline.run --data data/sample --warehouse warehouse.duckdb
+      - run: python -m src.quality.gate --warehouse warehouse.duckdb --batch batch_002 --report reports
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: quality-gate-report
+          path: reports/

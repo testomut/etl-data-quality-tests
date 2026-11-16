@@ -1,0 +1,50 @@
+[project]
+name = "etl-data-quality-tests"
+version = "0.1.0"
+description = "Learning project: a small ELT pipeline (raw -> staging -> marts) on DuckDB and a pytest data-quality suite around it"
+requires-python = ">=3.11"
+dependencies = [
+    "duckdb>=1.1",
+    "pydantic>=2.7",
+    "pytest>=8.2",
+    "pytest-xdist>=3.6",
+    "pytest-timeout>=2.3",
+]
+
+[project.optional-dependencies]
+report = ["allure-pytest>=2.13"]
+dev = ["ruff>=0.5", "mypy>=1.10"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+timeout = 120
+addopts = "-ra --strict-markers"
+log_cli = false
+markers = [
+    "positive: the check passes on correct data",
+    "negative: the check rejects or reports broken data",
+    "case_id(id): stable case ID from tests/cases.json",
+    "fault: proves that a check fails when a known defect is injected",
+]
+
+[tool.ruff]
+line-length = 115
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM", "RUF"]
+# SIM117: a numbered step wrapping pytest.raises reads as "step -> expectation"; merging them hides the step.
+ignore = ["SIM117"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = false
+warn_unused_ignores = true
+ignore_missing_imports = true
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["src*", "fixtures*"]
