@@ -82,6 +82,12 @@ tests/              raw/ staging/ marts/ scenarios/ quality_gate/ faults/ unit/ 
 docs/               TEST_STRATEGY.md
 ```
 
+## How this was built
+
+Built with Claude Code following my own test-writing skill (`qa-tests-pytest`, described in
+[ai-builds/claude-skills](https://github.com/testomut/ai-builds/tree/main/claude-skills)). I reviewed every test
+and proved each check with fault injection: switching on the defect it guards against must make it fail.
+
 ## How a failure reads
 
 ```text
